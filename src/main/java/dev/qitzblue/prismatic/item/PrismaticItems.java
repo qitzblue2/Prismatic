@@ -102,7 +102,7 @@ public final class PrismaticItems {
     public ItemStack hastePickaxe() {
         ItemStack stack = new ItemStack(cfg.pickaxeMaterial);
         stack.editMeta(meta -> {
-            meta.displayName(Text.mm("<#FFB7E5><bold>Miner's Edge</bold>"));
+            meta.displayName(Text.mm("<#FFB7E5><bold>Oblivion</bold>"));
             meta.lore(List.of(Text.mm("<gray>Drawn from the Prismatic.")));
             tag(meta, PICKAXE);
         });
