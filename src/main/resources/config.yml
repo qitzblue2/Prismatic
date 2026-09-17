@@ -1,0 +1,65 @@
+# ============================================================
+#  Prismatic
+# ============================================================
+# Every duration is in seconds unless the name says "ticks".
+# Set any cooldown to 0 to remove it.
+
+item:
+  # Material used for the Prismatic Key (the upgrade ingredient).
+  key-material: TRIAL_KEY
+  # Point the items at the bundled resource pack via the item_model component.
+  # Turn this off and the items keep their vanilla Nether Star / Trial Key look.
+  custom-textures: true
+  texture-namespace: prismatic
+
+# --- Ability one: the shockwave. Right-click, upgraded or not. ---------------
+shockwave:
+  cooldown: 20
+  radius: 6.0
+  slowness-level: 3          # 3 = Slowness III
+  slowness-duration: 10
+  shield-disable: 8          # vanilla axe disable is 5
+  # Outward shove applied to everyone caught. 0 disables it entirely.
+  knockback: 0.0
+  hit-self: false
+  # Ring animation: how many expanding rings, and how dense each one is.
+  rings: 4
+  points-per-ring: 44
+  ticks-between-rings: 2
+
+# --- Shift-right-click compendium (upgraded star only) ----------------------
+compendium:
+  # Cooldown on opening the book itself.
+  cooldown: 0
+  # How long a click inside the book stays valid, in seconds.
+  click-window: 60
+
+abilities:
+  vanish:
+    cooldown: 60
+    duration: 15
+  haste-pickaxe:
+    cooldown: 90
+    material: DIAMOND_PICKAXE
+    haste-level: 5
+    haste-duration: 60
+  dash-elytra:
+    cooldown: 90
+    durability: 10           # uses left on the elytra
+    launch-up: 1.15
+    launch-forward: 0.55
+  rainfall-rod:
+    cooldown: 120
+    rain-duration: 300
+    thunder: false
+    consume-on-use: true     # the rod vanishes once it has called the rain
+  thunderstep:
+    cooldown: 120
+    spectator-duration: 5
+    # false = lightning is visual/audio only (it will not set you on fire).
+    lightning-damages: false
+
+messages:
+  prefix: "<gradient:#FFB7E5:#A9D6FF><bold>Prismatic</bold></gradient> <dark_gray>»</dark_gray> "
+  on-cooldown: "<#FFB7E5>That is still settling. <white><time>s</white> left."
+  no-permission: "<red>You cannot use that."

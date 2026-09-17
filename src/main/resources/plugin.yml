@@ -1,0 +1,24 @@
+name: Prismatic
+version: '${project.version}'
+main: dev.qitzblue.prismatic.PrismaticPlugin
+api-version: '1.21'
+description: The Prismatic star - a shockwave nether star that upgrades into an ability compendium.
+author: qitzblue2
+folia-supported: false
+
+commands:
+  prismatic:
+    description: Give out Prismatic items and reload the plugin.
+    usage: /prismatic <give|key|reload> [player]
+    permission: prismatic.admin
+  prismaticability:
+    description: Internal - fired by clicking an entry in the Prismatic compendium.
+    usage: /prismaticability <ability>
+
+permissions:
+  prismatic.admin:
+    description: Give Prismatic items and reload the config.
+    default: op
+  prismatic.use:
+    description: Use Prismatic item abilities.
+    default: true
