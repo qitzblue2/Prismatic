@@ -61,9 +61,13 @@ produce nothing.
 Rings of end rod particles race outward, and everything caught in the radius takes:
 
 - **Slowness III**, 10s
-- **Shield disabled**, 8s — the real vanilla cooldown system, so the shield greys
-  out and cannot be raised. Vanilla's axe disable is 5s, so this is a clear upgrade
-  without being permanent.
+- **Shield broken** — the shield is destroyed in their hand, with the vanilla
+  item-break sound and shards. Gone, not greyed out.
+- **Shields disabled**, 8s on top, so pulling a spare shield out of the hotbar
+  does not simply undo the break.
+
+Set `shockwave.shield-break: false` to fall back to a plain timed disable, or
+`shield-disable: 0` to break the held shield and nothing more.
 
 Knockback is wired up but defaults to `0.0`, so it will not drag people out of
 your combos. Turn it on in the config if you want the shove.
@@ -77,8 +81,10 @@ you must be holding the awakened star *and* have opened the book in the last 60s
 
 **Page ii — Toolkit.** Pick **one**:
 - *Miner's Edge* — a pickaxe and Haste V for 60s
-- *Ely-Boost* — a bare elytra with 10 uses, plus a shove into the air that starts
-  you gliding
+- *Ely-Boost* — a bare elytra with 10 uses, plus a hard shove into the air that
+  starts you gliding. Your own chestplate is set aside whole — enchants, trim,
+  durability — and handed straight back the instant you touch the ground, while
+  the loaner elytra is removed.
 - *Rainfall* — a fishing rod that calls the rain. Consumed on use by default.
 
 **Page iii — Thunderstep.** Lightning strikes, you go spectator for 5 seconds to
@@ -123,9 +129,10 @@ it. Defaults:
 
 ## Notes
 
-- Thunderstep state is written to `thunderstep-state.yml`, so a restart or a
-  logout mid-ability cannot strand anyone in spectator — they are pulled back on
-  rejoin. Coming out of spectator inside a block nudges you upward first.
+- Ability state is written to `state.yml`, so a restart or a logout mid-ability
+  cannot strand anyone in spectator, and — more importantly — cannot swallow a
+  chestplate that an Ely-Boost displaced. Both are put right on rejoin. Coming
+  out of spectator inside a block nudges you upward first.
 - The Prismatic star is still a Nether Star underneath, so beacons are blocked
   from eating it, and no other recipe will consume it.
 - `pack.mcmeta` declares a wide `supported_formats` range. If your client calls

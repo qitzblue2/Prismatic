@@ -18,6 +18,11 @@ shockwave:
   radius: 6.0
   slowness-level: 3          # 3 = Slowness III
   slowness-duration: 10
+  # true destroys the shield outright - it breaks in their hand and is gone.
+  # false falls back to a plain timed disable.
+  shield-break: true
+  # Shields are disabled for this long as well, so swapping to a spare shield
+  # does not undo the break. 0 turns the disable off and only breaks.
   shield-disable: 8          # vanilla axe disable is 5
   # Outward shove applied to everyone caught. 0 disables it entirely.
   knockback: 0.0
@@ -46,8 +51,11 @@ abilities:
   dash-elytra:
     cooldown: 90
     durability: 10           # uses left on the elytra
-    launch-up: 1.15
-    launch-forward: 0.55
+    launch-up: 1.35
+    launch-forward: 1.05
+    # The elytra is stripped and your own chestplate handed back the moment you
+    # touch the ground. Your chestplate is stored untouched, enchants and all.
+    return-chestplate: true
   rainfall-rod:
     cooldown: 120
     rain-duration: 300

@@ -7,9 +7,11 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -25,19 +27,29 @@ import java.util.UUID;
 /** Everything the compendium can hand out. */
 public final class Abilities {
 
+    /** Landing is polled on this period, in ticks. */
+    private static final long LANDING_POLL = 2L;
+    /** Give up waiting for a launch that never left the ground (~4s). */
+    private static final int NEVER_LEFT_GROUND = 40;
+    /** Hard ceiling on a single flight (~5 min) so a watcher can never leak. */
+    private static final int FLIGHT_CEILING = 3000;
+
     private final JavaPlugin plugin;
     private final Cfg cfg;
     private final PrismaticItems items;
 
     /** Players currently mid-Thunderstep, and the game mode owed back to them. */
     private final Map<UUID, GameMode> owedGameMode = new HashMap<>();
+    /** Chestplates set aside while an Ely-Boost is being flown. */
+    private final Map<UUID, ItemStack> stashedChestplate = new HashMap<>();
+
     private final File stateFile;
 
     public Abilities(JavaPlugin plugin, Cfg cfg, PrismaticItems items) {
         this.plugin = plugin;
         this.cfg = cfg;
         this.items = items;
-        this.stateFile = new File(plugin.getDataFolder(), "thunderstep-state.yml");
+        this.stateFile = new File(plugin.getDataFolder(), "state.yml");
         loadState();
     }
 
@@ -61,14 +73,27 @@ public final class Abilities {
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.8f, 1.5f);
     }
 
+    /**
+     * Swaps the player's chestplate out for the Ely-Boost and launches them. The
+     * chestplate is stored whole, so enchantments, trim and durability all survive,
+     * and it is handed straight back the moment they touch the ground.
+     */
     public void dashElytra(Player player) {
-        ItemStack elytra = items.dashElytra();
-        ItemStack chest = player.getInventory().getChestplate();
-        if (chest == null || chest.getType().isAir()) {
-            player.getInventory().setChestplate(elytra);
-        } else {
-            give(player, elytra);
+        PlayerInventory inventory = player.getInventory();
+        ItemStack worn = inventory.getChestplate();
+
+        // Re-activating mid-flight must not stash the loaner elytra over the real
+        // chestplate, so anything of ours in that slot is ignored here.
+        boolean ours = worn != null && items.is(worn, PrismaticItems.ELYTRA);
+        if (worn != null && !worn.getType().isAir() && !ours) {
+            if (cfg.returnChestplate) {
+                stashedChestplate.put(player.getUniqueId(), worn.clone());
+                saveState();
+            } else {
+                give(player, worn.clone());  // not coming back later, so hand it over now
+            }
         }
+        inventory.setChestplate(items.dashElytra());
 
         player.setVelocity(player.getLocation().getDirection()
                 .multiply(cfg.launchForward)
@@ -81,12 +106,70 @@ public final class Abilities {
             @Override
             public void run() {
                 if (!player.isOnline() || player.isOnGround()) return;
-                ItemStack worn = player.getInventory().getChestplate();
-                if (worn != null && items.is(worn, PrismaticItems.ELYTRA)) {
+                ItemStack chest = player.getInventory().getChestplate();
+                if (chest != null && items.is(chest, PrismaticItems.ELYTRA)) {
                     player.setGliding(true);
                 }
             }
         }.runTaskLater(plugin, 3L);
+
+        watchForLanding(player);
+    }
+
+    private void watchForLanding(Player player) {
+        new BukkitRunnable() {
+            private boolean airborne = false;
+            private int polls = 0;
+
+            @Override
+            public void run() {
+                polls++;
+                if (!player.isOnline()) {
+                    cancel();               // the quit handler ends the flight instead
+                    return;
+                }
+                if (!player.isOnGround()) {
+                    airborne = true;
+                    if (polls < FLIGHT_CEILING) return;
+                } else if (!airborne && polls < NEVER_LEFT_GROUND) {
+                    return;                 // launch has not lifted them yet
+                }
+                endFlight(player);
+                cancel();
+            }
+        }.runTaskTimer(plugin, 5L, LANDING_POLL);
+    }
+
+    /** Strips the Ely-Boost and gives the player their own chestplate back. */
+    public void endFlight(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack worn = inventory.getChestplate();
+        boolean wearingBoost = worn != null && items.is(worn, PrismaticItems.ELYTRA);
+
+        if (wearingBoost) {
+            inventory.setChestplate(null);
+            player.setGliding(false);
+        }
+
+        ItemStack stashed = stashedChestplate.remove(player.getUniqueId());
+        if (stashed == null) return;
+        saveState();
+
+        ItemStack nowWorn = inventory.getChestplate();
+        if (nowWorn == null || nowWorn.getType().isAir()) {
+            inventory.setChestplate(stashed);
+        } else {
+            give(player, stashed);          // they equipped something else mid-flight
+        }
+
+        if (wearingBoost) {
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_ELYTRA, 0.9f, 1.2f);
+            puff(player.getLocation(), 20, 0.3);
+        }
+    }
+
+    public boolean isMidFlight(Player player) {
+        return stashedChestplate.containsKey(player.getUniqueId());
     }
 
     public void rainfallRod(Player player) {
@@ -148,12 +231,15 @@ public final class Abilities {
         puff(player.getLocation(), 40, 0.4);
     }
 
+    /** Called on shutdown: nobody should be left in spectator or wearing a loaner elytra. */
     public void restoreAll() {
         for (UUID id : Map.copyOf(owedGameMode).keySet()) {
             Player player = plugin.getServer().getPlayer(id);
-            if (player != null) {
-                restore(player);
-            }
+            if (player != null) restore(player);
+        }
+        for (UUID id : Map.copyOf(stashedChestplate).keySet()) {
+            Player player = plugin.getServer().getPlayer(id);
+            if (player != null) endFlight(player);
         }
     }
 
@@ -190,22 +276,49 @@ public final class Abilities {
                 .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
     }
 
-    // Persisted so a restart mid-ability cannot strand anyone in spectator.
+    // Persisted so a restart mid-ability cannot strand anyone in spectator, and
+    // above all cannot lose somebody's enchanted chestplate.
     private void loadState() {
         if (!stateFile.exists()) return;
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(stateFile);
-        for (String key : yaml.getKeys(false)) {
-            try {
-                owedGameMode.put(UUID.fromString(key), GameMode.valueOf(yaml.getString(key, "SURVIVAL")));
-            } catch (IllegalArgumentException ignored) {
-                // Unparseable entry, drop it rather than fail startup.
+
+        ConfigurationSection modes = yaml.getConfigurationSection("thunderstep");
+        if (modes != null) {
+            for (String key : modes.getKeys(false)) {
+                UUID id = parseUuid(key);
+                if (id == null) continue;
+                try {
+                    owedGameMode.put(id, GameMode.valueOf(modes.getString(key, "SURVIVAL")));
+                } catch (IllegalArgumentException ignored) {
+                    // Unparseable game mode, drop the entry rather than fail startup.
+                }
             }
+        }
+
+        ConfigurationSection chestplates = yaml.getConfigurationSection("chestplate");
+        if (chestplates != null) {
+            for (String key : chestplates.getKeys(false)) {
+                UUID id = parseUuid(key);
+                ItemStack stack = chestplates.getItemStack(key);
+                if (id != null && stack != null) {
+                    stashedChestplate.put(id, stack);
+                }
+            }
+        }
+    }
+
+    private UUID parseUuid(String raw) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
     private void saveState() {
         YamlConfiguration yaml = new YamlConfiguration();
-        owedGameMode.forEach((id, mode) -> yaml.set(id.toString(), mode.name()));
+        owedGameMode.forEach((id, mode) -> yaml.set("thunderstep." + id, mode.name()));
+        stashedChestplate.forEach((id, stack) -> yaml.set("chestplate." + id, stack));
         try {
             if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
                 plugin.getLogger().warning("Could not create the plugin data folder.");
@@ -213,7 +326,7 @@ public final class Abilities {
             }
             yaml.save(stateFile);
         } catch (IOException e) {
-            plugin.getLogger().warning("Could not save Thunderstep state: " + e.getMessage());
+            plugin.getLogger().warning("Could not save Prismatic state: " + e.getMessage());
         }
     }
 }

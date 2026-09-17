@@ -17,6 +17,7 @@ public final class Cfg {
     public double shockwaveRadius;
     public int slownessLevel;
     public int slownessDuration;
+    public boolean shieldBreak;
     public int shieldDisable;
     public double knockback;
     public boolean hitSelf;
@@ -32,6 +33,7 @@ public final class Cfg {
     public Material pickaxeMaterial;
     public int elytraCooldown, elytraDurability;
     public double launchUp, launchForward;
+    public boolean returnChestplate;
     public int rodCooldown, rainDuration;
     public boolean rodThunder, rodConsume;
     public int thunderCooldown, spectatorDuration;
@@ -55,6 +57,7 @@ public final class Cfg {
         shockwaveRadius   = c.getDouble("shockwave.radius", 6.0);
         slownessLevel     = Math.max(1, c.getInt("shockwave.slowness-level", 3));
         slownessDuration  = c.getInt("shockwave.slowness-duration", 10);
+        shieldBreak       = c.getBoolean("shockwave.shield-break", true);
         shieldDisable     = c.getInt("shockwave.shield-disable", 8);
         knockback         = c.getDouble("shockwave.knockback", 0.0);
         hitSelf           = c.getBoolean("shockwave.hit-self", false);
@@ -75,8 +78,9 @@ public final class Cfg {
 
         elytraCooldown   = c.getInt("abilities.dash-elytra.cooldown", 90);
         elytraDurability = Math.max(1, c.getInt("abilities.dash-elytra.durability", 10));
-        launchUp         = c.getDouble("abilities.dash-elytra.launch-up", 1.15);
-        launchForward    = c.getDouble("abilities.dash-elytra.launch-forward", 0.55);
+        launchUp         = c.getDouble("abilities.dash-elytra.launch-up", 1.35);
+        launchForward    = c.getDouble("abilities.dash-elytra.launch-forward", 1.05);
+        returnChestplate = c.getBoolean("abilities.dash-elytra.return-chestplate", true);
 
         rodCooldown  = c.getInt("abilities.rainfall-rod.cooldown", 120);
         rainDuration = c.getInt("abilities.rainfall-rod.rain-duration", 300);

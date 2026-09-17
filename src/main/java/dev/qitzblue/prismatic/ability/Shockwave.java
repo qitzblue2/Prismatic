@@ -10,6 +10,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -80,7 +82,7 @@ public final class Shockwave {
                         PotionEffectType.SLOWNESS, slowTicks, cfg.slownessLevel - 1, false, true, true));
             }
             if (target instanceof Player player) {
-                disableShield(player);
+                shatterShield(player);
             }
             if (cfg.knockback > 0) {
                 Vector push = target.getLocation().toVector().subtract(centre.toVector());
@@ -92,16 +94,32 @@ public final class Shockwave {
     }
 
     /**
-     * Puts the shield on its use cooldown, which is exactly how a vanilla axe disable works:
-     * the shield greys out and cannot be raised until it runs down.
+     * Breaks the shield outright: it is destroyed in their hand, with the vanilla
+     * item-break sound and shards. The use cooldown is applied on top so that
+     * pulling a spare shield out of the hotbar does not simply undo it.
      */
-    private void disableShield(Player target) {
-        if (cfg.shieldDisable <= 0) return;
-        target.setCooldown(Material.SHIELD, cfg.shieldDisable * 20);
-        boolean holding = target.getInventory().getItemInMainHand().getType() == Material.SHIELD
-                || target.getInventory().getItemInOffHand().getType() == Material.SHIELD;
-        if (holding) {
-            target.playSound(target.getLocation(), Sound.ITEM_SHIELD_BREAK, 1.0f, 1.2f);
+    private void shatterShield(Player target) {
+        if (cfg.shieldBreak) {
+            PlayerInventory inventory = target.getInventory();
+            if (inventory.getItemInMainHand().getType() == Material.SHIELD) {
+                destroy(target, inventory.getItemInMainHand());
+                inventory.setItemInMainHand(null);
+            }
+            if (inventory.getItemInOffHand().getType() == Material.SHIELD) {
+                destroy(target, inventory.getItemInOffHand());
+                inventory.setItemInOffHand(null);
+            }
+        }
+        if (cfg.shieldDisable > 0) {
+            target.setCooldown(Material.SHIELD, cfg.shieldDisable * 20);
         }
     }
+
+    private void destroy(Player target, ItemStack shield) {
+        Location at = target.getLocation().add(0, 1.2, 0);
+        at.getWorld().playSound(at, Sound.ENTITY_ITEM_BREAK, 1.0f, 0.9f);
+        at.getWorld().playSound(at, Sound.ITEM_SHIELD_BREAK, 1.0f, 1.0f);
+        at.getWorld().spawnParticle(Particle.ITEM, at, 18, 0.25, 0.25, 0.25, 0.06, shield.clone());
+    }
+
 }
