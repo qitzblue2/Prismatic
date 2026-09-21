@@ -63,7 +63,7 @@ abilities:
     consume-on-use: true     # the rod vanishes once it has called the rain
   thunderstep:
     cooldown: 120
-    spectator-duration: 5
+    spectator-duration: 3
     # false = lightning is visual/audio only (it will not set you on fire).
     lightning-damages: false
 

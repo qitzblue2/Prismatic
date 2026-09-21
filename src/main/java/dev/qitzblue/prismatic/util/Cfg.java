@@ -88,7 +88,7 @@ public final class Cfg {
         rodConsume   = c.getBoolean("abilities.rainfall-rod.consume-on-use", true);
 
         thunderCooldown   = c.getInt("abilities.thunderstep.cooldown", 120);
-        spectatorDuration = Math.max(1, c.getInt("abilities.thunderstep.spectator-duration", 5));
+        spectatorDuration = Math.max(1, c.getInt("abilities.thunderstep.spectator-duration", 3));
         lightningDamages  = c.getBoolean("abilities.thunderstep.lightning-damages", false);
 
         prefix       = c.getString("messages.prefix", "");

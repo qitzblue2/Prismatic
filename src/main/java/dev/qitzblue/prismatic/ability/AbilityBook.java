@@ -54,9 +54,9 @@ public final class AbilityBook {
         return Component.empty()
                 .append(heading("Thunderstep"))
                 .append(Text.raw("<dark_gray>  iii of iii\n\n"))
-                .append(Text.raw("<#6A5A78>The bolt takes you. You\nget five seconds above\nthe world, and then it\nwants you back.\n\n"))
+                .append(Text.raw("<#6A5A78>The bolt takes you. You\nget three seconds above\nthe world, and then it\nwants you back.\n\n"))
                 .append(entry("Ascend", THUNDERSTEP,
-                        "Lightning, then five seconds as a ghost to climb. Bring the mace."));
+                        "Lightning, then three seconds as a ghost to climb. Bring the mace."));
     }
 
     private Component heading(String title) {

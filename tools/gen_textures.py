@@ -1,38 +1,22 @@
 #!/usr/bin/env python3
-"""Generates the Prismatic resource pack textures.
+"""Generates the Prismatic Key texture.
 
-Pure pixel art: hand-authored 16x16 grids, coloured with three-tone ramps.
-Re-run after editing a grid:  python3 tools/gen_textures.py
+The two star textures are supplied artwork and are checked in as-is - this
+script must never touch them. Only the key is generated here: hand-authored
+16x16 pixel grid, coloured with three-tone ramps.
+
+    python3 tools/gen_textures.py [--preview]
 """
 from PIL import Image
-import math, os, sys
+import os
+import sys
 
 S = 16
 
-# Three-tone ramps per hue. Shading never multiplies toward black - that goes muddy
-# on pastels - it steps along a ramp instead.
+# Three-tone ramps per hue. Shading never multiplies toward black - that goes
+# muddy on pastels - it steps along a ramp instead.
 PINK_HI, PINK_MID, PINK_SH = (0xFF, 0xDA, 0xF1), (0xFF, 0x8F, 0xD4), (0xE0, 0x5F, 0xB0)
 BLUE_HI, BLUE_MID, BLUE_SH = (0xD8, 0xEF, 0xFF), (0x6F, 0xBC, 0xFF), (0x3F, 0x8D, 0xDB)
-WHITE = (0xFF, 0xFF, 0xFF)
-
-STAR = [
-    ".......##.......",
-    ".......##.......",
-    ".......##.......",
-    "......####......",
-    "......####......",
-    ".....######.....",
-    "...##########...",
-    "################",
-    "################",
-    "...##########...",
-    ".....######.....",
-    "......####......",
-    "......####......",
-    ".......##.......",
-    ".......##.......",
-    ".......##.......",
-]
 
 KEY = [
     "................",
@@ -53,6 +37,9 @@ KEY = [
     "................",
 ]
 
+# Textures owned by the artwork, not by this script.
+SUPPLIED = ("prismatic_star.png", "prismatic_star_awakened.png")
+
 
 def lerp(a, b, t):
     t = max(0.0, min(1.0, t))
@@ -68,11 +55,10 @@ def ramp(t):
     return lerp(PINK_HI, BLUE_HI, t), lerp(PINK_MID, BLUE_MID, t), lerp(PINK_SH, BLUE_SH, t)
 
 
-def render(grid, tfun, core=0.0):
+def render(grid, tfun):
     mask = [[c == "#" for c in row] for row in grid]
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     px = img.load()
-    cx = cy = (S - 1) / 2.0
     for y in range(S):
         for x in range(S):
             if not mask[y][x]:
@@ -84,53 +70,33 @@ def render(grid, tfun, core=0.0):
             left = x > 0     and mask[y][x - 1]
             dn   = y < S - 1 and mask[y + 1][x]
             rt   = x < S - 1 and mask[y][x + 1]
-            colour = hi if (not up and not left) else sh if (not dn and not rt) else mid
-            if core > 0:
-                d = math.hypot(x - cx, y - cy)
-                if d <= core:
-                    colour = lerp(colour, WHITE, (1.0 - d / core) ** 0.7)
-            px[x, y] = (*colour, 255)
+            px[x, y] = (*(hi if (not up and not left)
+                          else sh if (not dn and not rt)
+                          else mid), 255)
     return img
 
 
-def diag(x, y):      # pink top-left -> blue bottom-right
-    return contrast(((x / (S - 1)) + (y / (S - 1))) / 2.0)
-
-
-def vertical(x, y):  # pink bow -> blue teeth
-    return contrast((y - 1) / 13.0)
-
-
 def main():
-    out = os.path.join(os.path.dirname(__file__), os.pardir,
-                       "resourcepack/assets/prismatic/textures/item")
-    out = os.path.abspath(out)
+    out = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), os.pardir,
+        "resourcepack/assets/prismatic/textures/item"))
     os.makedirs(out, exist_ok=True)
 
-    star = render(STAR, diag, core=2.6)
-    star.save(os.path.join(out, "prismatic_star.png"))
-
-    awakened = render(STAR, diag, core=3.6)
-    px = awakened.load()
-    for x, y, colour in [(1, 1, WHITE), (14, 14, WHITE),
-                         (14, 2, PINK_MID), (1, 13, BLUE_MID)]:
-        if px[x, y][3] == 0:
-            px[x, y] = (*colour, 255)
-    awakened.save(os.path.join(out, "prismatic_star_awakened.png"))
-
-    key = render(KEY, vertical)
+    rows = [y for y, r in enumerate(KEY) if "#" in r]
+    top, bottom = min(rows), max(rows)
+    key = render(KEY, lambda x, y: contrast((y - top) / (bottom - top)))
     key.save(os.path.join(out, "prismatic_key.png"))
-
-    pack = os.path.abspath(os.path.join(out, "../../../..", "pack.png"))
-    awakened.resize((128, 128), Image.NEAREST).save(pack)
+    print("wrote prismatic_key.png ->", out)
+    print("left untouched (supplied artwork):", ", ".join(SUPPLIED))
 
     if "--preview" in sys.argv:
-        sheet = Image.new("RGBA", (S * 3 + 8, S), (0, 0, 0, 0))
-        for i, im in enumerate((star, awakened, key)):
-            sheet.paste(im, (i * (S + 4), 0))
-        sheet.resize((sheet.width * 20, sheet.height * 20), Image.NEAREST).save(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview.png"))
-    print("textures written to", out)
+        tiles = [key] + [Image.open(os.path.join(out, n)).convert("RGBA") for n in SUPPLIED]
+        sheet = Image.new("RGBA", (S * len(tiles) + 4 * (len(tiles) - 1), S), (0, 0, 0, 0))
+        for i, tile in enumerate(tiles):
+            sheet.paste(tile, (i * (S + 4), 0))
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview.png")
+        sheet.resize((sheet.width * 20, sheet.height * 20), Image.NEAREST).save(path)
+        print("preview ->", path)
 
 
 if __name__ == "__main__":

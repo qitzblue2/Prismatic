@@ -33,8 +33,9 @@ The items point at it through the `item_model` component. Without the pack they
 simply keep their vanilla Nether Star / Trial Key look — nothing breaks. Set
 `item.custom-textures: false` in the config to skip the component entirely.
 
-Textures are generated, not hand-painted pixel by pixel: edit the grids in
-`tools/gen_textures.py` and re-run `python3 tools/gen_textures.py` (needs Pillow).
+The two star textures are supplied artwork, checked in as-is — `tools/gen_textures.py`
+deliberately leaves them alone. Only the key is generated: edit its grid in that
+script and re-run `python3 tools/gen_textures.py` (needs Pillow).
 
 ---
 
@@ -87,7 +88,7 @@ you must be holding the awakened star *and* have opened the book in the last 60s
   the loaner elytra is removed.
 - *Rainfall* — a fishing rod that calls the rain. Consumed on use by default.
 
-**Page iii — Thunderstep.** Lightning strikes, you go spectator for 5 seconds to
+**Page iii — Thunderstep.** Lightning strikes, you go spectator for 3 seconds to
 climb, then drop back into survival wherever you floated to — mace in hand.
 
 The lightning is effect-only by default, so it will not set *you* on fire. Flip
