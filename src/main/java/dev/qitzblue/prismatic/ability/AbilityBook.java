@@ -40,7 +40,7 @@ public final class AbilityBook {
                 .append(heading("Toolkit"))
                 .append(Text.raw("<dark_gray>  ii of iii\n\n"))
                 .append(Text.raw("<#6A5A78>Take one.\n\n"))
-                .append(entry("Miner's Edge", PICKAXE,
+                .append(entry("Oblivion", PICKAXE,
                         "A pickaxe, and Haste V to swing it with."))
                 .append(Component.text("\n"))
                 .append(entry("Ely-Boost", ELYTRA,

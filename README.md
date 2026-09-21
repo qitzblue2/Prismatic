@@ -81,7 +81,7 @@ you must be holding the awakened star *and* have opened the book in the last 60s
 **Page i — Vanish.** A puff of end rod light, then Invisibility for 15s.
 
 **Page ii — Toolkit.** Pick **one**:
-- *Miner's Edge* — a pickaxe and Haste V for 60s
+- *Oblivion* — a pickaxe and Haste V for 60s
 - *Ely-Boost* — a bare elytra with 10 uses, plus a hard shove into the air that
   starts you gliding. Your own chestplate is set aside whole — enchants, trim,
   durability — and handed straight back the instant you touch the ground, while
@@ -123,7 +123,7 @@ it. Defaults:
 |---|---|
 | Shockwave | 20s cooldown, 6 block radius |
 | Vanish | 60s cooldown |
-| Miner's Edge / Ely-Boost | 90s cooldown |
+| Oblivion / Ely-Boost | 90s cooldown |
 | Rainfall / Thunderstep | 120s cooldown |
 
 ---
